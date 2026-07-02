@@ -47,6 +47,18 @@ var steamApiKey = builder.Configuration["STEAM_API_KEY"];
 var authBackend = builder.Configuration["Auth:Backend"] ?? "keycloak";
 var useKeycloak = string.Equals(authBackend, "keycloak", StringComparison.OrdinalIgnoreCase);
 
+// Shared SQLite file for every API. Each binary otherwise resolves the default
+// relative "Data Source=plans.db" (appsettings) against its own content root,
+// so the Auth API and the game APIs silently end up with *separate* databases.
+// The Player aggregate is owned + seeded by the Auth API (DevPlayerBootstrap),
+// but the Satisfactory API's catalogue/plan rows carry a foreign key to it —
+// with divergent files the agent's catalogue upload dies on a Players FK (500).
+// Pinning one absolute path here mirrors prod (all APIs share one Postgres).
+// The game APIs already WaitFor(authApi) so the Auth API migrates + seeds first,
+// and each API's own startup migrate is a no-op against the shared, already-
+// migrated file. Env vars outrank appsettings, so this wins without edits there.
+var sharedPlansDb = $"Data Source={Path.Combine(builder.AppHostDirectory, "erp-local.db")}";
+
 // Keycloak human-login standup for LOCAL DEV (ADR-0028 / #292). Brings up a
 // Keycloak container with the `erp` realm imported from ./keycloak (confidential
 // `satisfactory-web` client + a seeded dev user). The prod containers ride #281.
@@ -101,6 +113,7 @@ if (keycloak is not null && !string.IsNullOrWhiteSpace(steamApiKey))
 var authApi = builder.AddProject<Projects.Erp_Presentation_Api_Auth>("auth-api")
     .WithEnvironment("Auth__JwtSigningKey", devJwtSigningKey)
     .WithEnvironment("Auth__Backend", authBackend)
+    .WithEnvironment("ConnectionStrings__Plans", sharedPlansDb)
     .WithHttpHealthCheck("/health");
 if (keycloak is not null)
 {
@@ -117,6 +130,7 @@ if (keycloak is not null)
 var apiService = builder.AddProject<Projects.Satisfactory_Presentation_Api>("apiservice")
     .WithEnvironment("Auth__JwtSigningKey", devJwtSigningKey)
     .WithEnvironment("Auth__Backend", authBackend)
+    .WithEnvironment("ConnectionStrings__Plans", sharedPlansDb)
     .WithHttpHealthCheck("/health")
     .WaitFor(authApi);
 if (keycloak is not null)
