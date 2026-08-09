@@ -20,13 +20,20 @@
     <!--
       Fallout is the hard-fork successor to NUKE; published to nuget.org (ADR-0021).
 
-      Pinned to an exact version with bracket notation. A bare "10.4.0" is a
-      *minimum*, so NuGet is free to satisfy it with anything higher — and it
-      did: restores here silently resolved Fallout.Common 11.0.8, a major
-      version we never chose. [10.4.0] makes a missing package an error instead
-      of a silent upgrade, which is what a build-system pin is for.
+      Pinned exactly with bracket notation. A bare version in NuGet is a
+      *minimum*, not a match, so this file said "10.3.5" while every build was
+      quietly resolving 11.0.8 — a major version nobody chose. The pin records
+      what we actually run.
+
+      11.0.8 specifically, and not something newer or older:
+        • 10.4.0 hangs the Test target. It waits on the test process, which does
+          not exit promptly here, then kills it — the build fails with exit 143
+          after every test has passed. Reproducible locally and on CI.
+        • 11.0.18 moved Fallout.Common.ProjectModel, so Build.cs no longer
+          compiles against it. Worth doing deliberately, not as a version bump.
+        • 11.0.8 is what CI has in fact been green on for months.
     -->
-    <PackageReference Include="Fallout.Common" Version="[10.4.0]" />
+    <PackageReference Include="Fallout.Common" Version="[11.0.8]" />
   </ItemGroup>
 
   <ItemGroup>
