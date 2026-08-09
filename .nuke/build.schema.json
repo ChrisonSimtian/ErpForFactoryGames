@@ -104,6 +104,13 @@
         "Verbosity": {
           "description": "Logging verbosity during build execution. Default is 'Normal'",
           "$ref": "#/definitions/Verbosity"
+        },
+        "BuildProjectFile": {
+          "type": [
+            "null",
+            "string"
+          ],
+          "description": "Path to the build project (.csproj) relative to the repository root. Defaults to 'build/_build.csproj' when unset. Read by the Fallout global tool's in-tool runner."
         }
       }
     }
@@ -114,20 +121,20 @@
         "AuthJwtSigningKey": {
           "type": "string",
           "description": "Shared HMAC-SHA256 key for agent JWTs (ADR-0027). Set a ≥256-bit secret in production",
-          "default": "Secrets must be entered via 'nuke :secrets [profile]'"
+          "default": "Secrets must be entered via 'fallout :secrets [profile]'"
         },
         "CloudflareApiToken": {
           "type": "string",
           "description": "Cloudflare API token. Scopes: Account · Cloudflare Tunnel · Edit; Zone · DNS · Edit; Account · Account Settings · Read",
-          "default": "Secrets must be entered via 'nuke :secrets [profile]'"
+          "default": "Secrets must be entered via 'fallout :secrets [profile]'"
         },
         "Configuration": {
           "type": "string",
-          "description": "Configuration to build — Debug locally, Release on CI",
           "enum": [
             "Debug",
             "Release"
-          ]
+          ],
+          "description": "Configuration to build — Debug locally, Release on CI"
         },
         "DeployOutput": {
           "type": "string",
