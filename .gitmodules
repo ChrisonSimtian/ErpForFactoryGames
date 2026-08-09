@@ -9,13 +9,6 @@
 	# / `git diff` so a fresh fork checkout doesn't show as a parent change.
 	ignore = all
 	update = none
-[submodule "vendor/CUE4Parse"]
-	path = vendor/CUE4Parse
-	url = https://github.com/FabianFG/CUE4Parse
-	# CUE4Parse isn't on the build graph either — vendored only for
-	# inspection. Same skip/ignore treatment.
-	ignore = all
-	update = none
 [submodule "deploy/Homelab.Stacks.ErpForFactoryGames"]
 	path = deploy/Homelab.Stacks.ErpForFactoryGames
 	url = https://github.com/ChrisonSimtian/Homelab.Stacks.ErpForFactoryGames.git
