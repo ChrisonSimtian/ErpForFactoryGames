@@ -156,6 +156,13 @@ class Build : FalloutBuild
             // Web.UiTests namespace, so !~ Web.UiTests matches them all. The UiTests
             // project still compiles but no tests run, so the AspireAppFixture (which
             // calls Microsoft.Playwright.Program.Main on init) never executes.
+            //
+            // The two node-reuse variables are not cosmetic. Fallout waits for the
+            // child's output streams to reach EOF, and MSBuild's reusable worker
+            // nodes and build server outlive `dotnet test` while still holding the
+            // inherited stdout handle — so EOF never arrives, Fallout waits out its
+            // grace period and kills the build with exit 143, long after every test
+            // has passed. Disabling the daemons lets the pipes close.
             DotNetTest(s => s
                 .SetProjectFile(Solution)
                 .SetConfiguration(Configuration)
@@ -164,6 +171,8 @@ class Build : FalloutBuild
                 .SetResultsDirectory(TestResultsDirectory)
                 .AddLoggers("trx;LogFilePrefix=test")
                 .AddLoggers("console;verbosity=normal")
+                .SetProcessEnvironmentVariable("MSBUILDDISABLENODEREUSE", "1")
+                .SetProcessEnvironmentVariable("DOTNET_CLI_USE_MSBUILD_SERVER", "0")
                 .SetFilter("FullyQualifiedName!~Web.UiTests"));
             Log.Information("TRX results written to {Dir} (Web.UiTests excluded — run `./build.sh Test` locally to include them)", TestResultsDirectory);
         });
