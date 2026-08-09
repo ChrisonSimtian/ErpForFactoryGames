@@ -17,8 +17,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Fallout is the hard-fork successor to NUKE; published to nuget.org (ADR-0021). -->
-    <PackageReference Include="Fallout.Common" Version="10.3.5" />
+    <!--
+      Fallout is the hard-fork successor to NUKE; published to nuget.org (ADR-0021).
+
+      Pinned to an exact version with bracket notation. A bare "10.4.0" is a
+      *minimum*, so NuGet is free to satisfy it with anything higher — and it
+      did: restores here silently resolved Fallout.Common 11.0.8, a major
+      version we never chose. [10.4.0] makes a missing package an error instead
+      of a silent upgrade, which is what a build-system pin is for.
+    -->
+    <PackageReference Include="Fallout.Common" Version="[10.4.0]" />
   </ItemGroup>
 
   <ItemGroup>
