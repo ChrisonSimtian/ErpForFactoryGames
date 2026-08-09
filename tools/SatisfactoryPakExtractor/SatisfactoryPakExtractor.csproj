@@ -3,12 +3,12 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <!--
-      Pinned to net8.0 to match vendor/CUE4Parse/CUE4Parse/CUE4Parse.csproj
-      (which targets net8.0). Multi-targeting net10 here would force the
-      vendored project to multi-target as well; not worth the churn for a
-      one-shot CLI tool.
+      net10.0 matches the rest of the repo (ADR-0001). This used to be pinned
+      to net8.0 solely to match the vendored CUE4Parse checkout's TFM; the
+      published rolling builds target net10.0, so the pin is gone with the
+      submodule.
     -->
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>SatisfactoryPakExtractor</RootNamespace>
@@ -18,11 +18,14 @@
 
   <ItemGroup>
     <!--
-      Vendored CUE4Parse master (see vendor/CUE4Parse, pinned in this tool's
-      README). NuGet 1.2.2 cannot parse Satisfactory 1.x's IoStore container
-      header — vendoring master lets us pick up upstream fixes promptly.
+      Upstream CUE4Parse from nuget.org. The plain 1.2.2 release couldn't parse
+      Satisfactory 1.x's IoStore container header, which is why this tool used
+      to build against a vendored master checkout. Upstream now ships dated
+      rolling builds of master (1.2.2.YYYYMM), so the package is the same code
+      the submodule gave us — without a second source of truth. See ADR-0029.
+      Bump the datestamp after major Satisfactory patches.
     -->
-    <ProjectReference Include="..\..\vendor\CUE4Parse\CUE4Parse\CUE4Parse.csproj" />
+    <PackageReference Include="CUE4Parse" Version="1.2.2.202608" />
     <!-- CUE4Parse logs warnings via Serilog; wire a console sink so we see them. -->
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
   </ItemGroup>

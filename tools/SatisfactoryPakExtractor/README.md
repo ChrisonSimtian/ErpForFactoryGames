@@ -2,8 +2,8 @@
 
 One-shot extractor that reads vanilla world-fixed placement data from a local
 Satisfactory install and emits the JSON datasets consumed by
-[`Satisfactory.Save.KnownResourceNodes`](../../src/Satisfactory/Save/KnownResourceNodes.cs)
-and [`Satisfactory.Save.KnownFlora`](../../src/Satisfactory/Save/KnownFlora.cs).
+[`KnownResourceNodes`](../../src/Infrastructure/Satisfactory.Infrastructure/KnownResourceNodes.cs)
+and [`KnownFlora`](../../src/Infrastructure/Satisfactory.Infrastructure/KnownFlora.cs).
 
 Re-run after every game patch — Coffee Stain occasionally moves nodes and
 shifts flora placements with biome rework.
@@ -15,7 +15,7 @@ Resource nodes only:
 ```powershell
 dotnet run --project tools/SatisfactoryPakExtractor -- `
     --paks "C:\Program Files (x86)\Steam\steamapps\common\Satisfactory\FactoryGame\Content\Paks" `
-    --out  src/Satisfactory/Save/Data/known-resource-nodes.json
+    --out  src/Infrastructure/Satisfactory.Infrastructure/Data/known-resource-nodes.json
 ```
 
 Flora only:
@@ -23,7 +23,7 @@ Flora only:
 ```powershell
 dotnet run --project tools/SatisfactoryPakExtractor -- `
     --paks "C:\Program Files (x86)\Steam\steamapps\common\Satisfactory\FactoryGame\Content\Paks" `
-    --flora-out src/Satisfactory/Save/Data/known-flora.json
+    --flora-out src/Infrastructure/Satisfactory.Infrastructure/Data/known-flora.json
 ```
 
 Both in one run (~3-minute mount + walk):
@@ -31,8 +31,8 @@ Both in one run (~3-minute mount + walk):
 ```powershell
 dotnet run --project tools/SatisfactoryPakExtractor -- `
     --paks "C:\Program Files (x86)\Steam\steamapps\common\Satisfactory\FactoryGame\Content\Paks" `
-    --out       src/Satisfactory/Save/Data/known-resource-nodes.json `
-    --flora-out src/Satisfactory/Save/Data/known-flora.json
+    --out       src/Infrastructure/Satisfactory.Infrastructure/Data/known-resource-nodes.json `
+    --flora-out src/Infrastructure/Satisfactory.Infrastructure/Data/known-flora.json
 ```
 
 Options:
@@ -54,25 +54,32 @@ committed.
 
 ## Output schema
 
-See [`Data/README.md`](../../src/Satisfactory/Save/Data/README.md). Keys: `x`,
+See [`Data/README.md`](../../src/Infrastructure/Satisfactory.Infrastructure/Data/README.md). Keys: `x`,
 `y`, `z` (cm), `resource` (`Desc_*_C`), `purity` (`Impure`/`Normal`/`Pure`).
 The extractor also writes a diagnostic `class` field (`BP_ResourceNode_C`
 etc.); the loader ignores unknown properties.
 
-## CUE4Parse vendor pin
+## CUE4Parse package pin
 
-This tool depends on `CUE4Parse` master (vendored as a submodule at
-[`vendor/CUE4Parse`](../../vendor/CUE4Parse/)) rather than the NuGet 1.2.2
-release. The NuGet build can't parse Satisfactory 1.x's `FactoryGame-Windows.utoc`
-container header — it throws `ParserException: Invalid bool value` in
-`FIoContainerHeaderSoftPackageReferences..ctor` regardless of which `EGame`
-flag is supplied. Master mounts the container cleanly.
+This tool depends on the upstream `CUE4Parse` package from nuget.org, currently
+**`1.2.2.202608`**.
 
-Pinned commit: **`7ac7b29d799a1303c5e21198d87cf67ec8cafde2`** ("Snowbreak lua
-decryption", picked at time of authoring this extractor). Bump by running
-`git -C vendor/CUE4Parse pull origin master` and committing the new submodule
-pointer. CUE4Parse fixes container-header layouts frequently; bumping is
-expected after every major Satisfactory patch.
+It used to build against a vendored `vendor/CUE4Parse` submodule instead,
+because the plain `1.2.2` release couldn't parse Satisfactory 1.x's
+`FactoryGame-Windows.utoc` container header — it threw
+`ParserException: Invalid bool value` in
+`FIoContainerHeaderSoftPackageReferences..ctor` regardless of the `EGame` flag.
+
+Upstream now publishes **dated rolling builds of master** (`1.2.2.YYYYMM`), so
+the package *is* the master build the submodule was giving us. The submodule was
+removed in favour of the package — see
+[ADR-0029](../../docs/adr/0029-standalone-game-libraries-as-nuget-packages.md).
+Verified against Satisfactory build 444486: the regenerated
+`known-resource-nodes.json` is byte-identical to the committed dataset.
+
+CUE4Parse fixes container-header layouts frequently; bumping the datestamp is
+expected after every major Satisfactory patch. If a future patch outruns the
+published builds, fork then — not before.
 
 ## UE5 version flag
 
@@ -144,9 +151,10 @@ it saw. Update `FloraActorMap` in `Program.cs` to point at the new names.
 
 ## Project structure
 
-- `SatisfactoryPakExtractor.csproj` — console project; pins net8.0 to match
-  CUE4Parse's TFM. References `vendor/CUE4Parse/CUE4Parse/CUE4Parse.csproj`
-  as a `ProjectReference` (no NuGet `CUE4Parse` entry).
+- `SatisfactoryPakExtractor.csproj` — console project on net10.0, matching the
+  rest of the repo ([ADR-0001](../../docs/adr/0001-use-dotnet-10.md)). Takes a
+  `PackageReference` on `CUE4Parse` from nuget.org — no submodule, no
+  `ProjectReference`.
 - `Program.cs` — mount + iterate + emit. Heavily commented.
 
 ## Constraints
